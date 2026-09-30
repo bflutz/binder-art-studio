@@ -58,7 +58,10 @@ p{margin:0}
 a{color:var(--accent);font-weight:700}
 .wrap{max-width:760px;margin:0 auto;display:grid;gap:18px}
 /* header */
-header{display:flex;gap:16px;align-items:center}
+header{display:flex;gap:10px 16px;align-items:center;flex-wrap:wrap}
+header>div:not(.logo){flex:1 1 260px;min-width:0}
+header .fb-open{margin-left:auto}
+.beta{display:inline-block;vertical-align:4px;font:800 11px/1 var(--body);letter-spacing:.08em;text-transform:uppercase;background:var(--lav);color:var(--fg);padding:5px 9px;border-radius:999px;margin-left:4px;transform:rotate(4deg)}
 header p{color:var(--muted)}
 .logo{display:grid;grid-template-columns:repeat(3,13px);grid-template-rows:repeat(3,18px);gap:3px;padding:7px;background:var(--panel);border:2px solid var(--line);border-radius:14px;transform:rotate(-6deg);box-shadow:0 4px 0 var(--line);flex:none}
 .logo i{border-radius:3px}
@@ -152,6 +155,11 @@ dialog.lightbox::backdrop{background:rgba(58,36,64,.6);backdrop-filter:blur(4px)
 .lightbox figure{margin:0;background:var(--panel);border:2px solid var(--line);border-radius:22px;padding:12px;display:grid;gap:10px}
 .lightbox img{width:100%;height:auto;max-height:76vh;object-fit:contain;border-radius:12px;display:block}
 .lightbox figcaption{display:flex;justify-content:space-between;align-items:center;gap:10px;font-weight:800;padding:0 4px}
+dialog.modal{border:0;padding:0;background:transparent;width:min(92vw,460px);max-width:none;color:var(--fg)}
+dialog.modal::backdrop{background:rgba(58,36,64,.6);backdrop-filter:blur(4px)}
+.modal-card{background:var(--panel);border:2px solid var(--line);border-radius:22px;padding:22px;display:grid;gap:12px}
+.modal-card .row{margin-top:4px}
+.addr{font-weight:800;color:var(--accent);user-select:all}
 footer{max-width:760px;margin:22px auto 0;text-align:center;font-size:12.5px;font-weight:700;color:var(--muted);text-wrap:balance}
 /* nav */
 nav.steps{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;border-top:2px dashed var(--line);padding-top:16px}
@@ -174,9 +182,10 @@ nav.steps{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;bor
   <header>
     <div class="logo" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
     <div>
-      <h1><span class="hl">Binder</span> Art Studio ✨</h1>
+      <h1><span class="hl">Binder</span> Art Studio ✨ <span class="beta" title="Still being built: things may change or break">Beta</span></h1>
       <p>Turn one favourite card into a full <span style="white-space:nowrap">9-pocket</span> binder page. Seven easy steps, one at a time.</p>
     </div>
+    <button type="button" class="small fb-open">💌 Send feedback</button>
   </header>
 
   <div class="rail" id="rail" role="tablist" aria-label="Steps"></div>
@@ -364,6 +373,7 @@ nav.steps{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;bor
       <li>Slide each tile into its pocket, matching the layout from step 2. Put your real card in last.</li>
     </ol>
     <div class="note"><b>Clean cuts:</b> a fresh blade, a cutting mat and two light passes beat one heavy pass. Scissors work in a pinch, but a ruler and knife keep the edges straight. If you ticked "faint cut lines" in step 6, cut right down the middle of the dashed line.</div>
+    <div class="note" style="border-color:var(--accent-fill);background:var(--accent-soft)">💌 <b>How did it go?</b> This tool is still in beta, so every bit of feedback helps. A photo of your finished page is extra welcome! <button type="button" class="small fb-open" style="margin-left:4px">Send feedback</button></div>
     <nav class="steps"><button class="back">Back</button><button class="primary" id="restart">Start another page 🎉</button></nav>
   </section>
 </div>
@@ -375,7 +385,22 @@ nav.steps{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;bor
   </figure>
 </dialog>
 
+<dialog class="modal" id="feedback" aria-labelledby="fbTitle">
+  <div class="modal-card">
+    <h2 id="fbTitle">Send feedback 💌</h2>
+    <p>Thanks for trying the beta! Tell me what worked, what was confusing, or what broke. Photos of your finished pages are very welcome.</p>
+    <div class="row">
+      <a class="btn primary" id="fbGmail" target="_blank" rel="noopener">Write in Gmail ↗</a>
+      <a class="btn" id="fbMail">Use my email app</a>
+    </div>
+    <p class="hint">Or email <span class="addr" id="fbAddr"></span> <button type="button" class="small" id="fbCopy">Copy address</button></p>
+    <p class="status" id="fbStatus"></p>
+    <div class="row" style="justify-content:flex-end"><button type="button" class="small" id="fbClose">Close</button></div>
+  </div>
+</dialog>
+
 <footer>
+  <b>Beta:</b> still being built, so things may change or break. <a href="#" class="fb-open" id="fbFooter">Send feedback</a><br>
   A fan-made hobby tool 💕 Not affiliated with Nintendo, The Pokémon Company or OpenAI. Card art belongs to its owners.
   Your pictures stay in your browser; nothing is uploaded to this site.
 </footer>
@@ -716,6 +741,35 @@ function confetti(){
     document.body.appendChild(c); setTimeout(()=>c.remove(),4200);
   }
 }
+
+// ---------- feedback (address assembled here so it isn't plain text in the page) ----------
+const FB_TO=['bflutz','gmail.com'].join('@'), FB_SUBJECT='Binder Art Studio feedback (beta)';
+const fb=$('feedback');
+function fbBody(){ return `Hi!
+
+What I was trying to do:
+
+What happened:
+
+Anything else:
+
+(Sent from step ${state.step} of 7)`; }
+function openFeedback(e){
+  if(e) e.preventDefault();
+  const su=encodeURIComponent(FB_SUBJECT), body=encodeURIComponent(fbBody());
+  $('fbAddr').textContent=FB_TO;
+  $('fbMail').href=`mailto:${FB_TO}?subject=${su}&body=${body}`;
+  $('fbGmail').href=`https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(FB_TO)}&su=${su}&body=${body}`;
+  setStatus('fbStatus','');
+  if(fb.showModal) fb.showModal(); else location.href=$('fbMail').href;
+}
+document.querySelectorAll('.fb-open').forEach(b=>b.addEventListener('click',openFeedback));
+$('fbCopy').addEventListener('click',async()=>{
+  try{ await navigator.clipboard.writeText(FB_TO); setStatus('fbStatus','Address copied. Paste it into any email.','ok'); }
+  catch(err){ const r=document.createRange(); r.selectNodeContents($('fbAddr')); const sel=getSelection(); sel.removeAllRanges(); sel.addRange(r); setStatus('fbStatus','Address selected; press Ctrl/Cmd+C to copy.','err'); }
+});
+$('fbClose').addEventListener('click',()=>fb.close());
+fb.addEventListener('click',e=>{ if(e.target===fb) fb.close(); });
 
 // ---------- misc ----------
 $('clearBtn').addEventListener('click',()=>{ state.slots=Array(9).fill(null); render(); });
