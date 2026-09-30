@@ -867,7 +867,7 @@ function openFeedback(e){
   if(fb.showModal){ fb.showModal(); if(FEEDBACK_URL) $('fbMsg').focus(); } else location.href=$('fbMail').href;
 }
 // Feedback form -> Google Apps Script relay -> private GitHub issue. Empty URL = email only.
-const FEEDBACK_URL='';
+const FEEDBACK_URL='https://script.google.com/macros/s/AKfycbzFjQG_qs2EMzMW9nw_Vy5m4k-JRMmDut8TM-AM3Os5IYM4LhUjHgBiyQTfllV1AGoK/exec';
 const FB_TYPES={idea:'💡 Idea', bug:'🐛 Something broke', praise:'💖 Love it', other:'💬 Other'};
 state.fbType='idea';
 function renderFbTypes(){
