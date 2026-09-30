@@ -104,11 +104,12 @@ button:active,.btn:active{transform:translateY(2px);box-shadow:0 1px 0 var(--lin
 button.small{padding:4px 12px;font-size:12.5px}
 button:disabled{opacity:.5;cursor:default}
 .status{font-size:13.5px;font-weight:700;min-height:1.2em}
+.status:empty{display:none}
 .status.err{color:var(--danger)} .status.ok{color:var(--ok)}
 .field{display:grid;gap:6px;align-content:start}
 .field>span{font-size:11.5px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.07em}
 .hint{color:var(--muted);font-size:13.5px}
-summary{list-style-position:outside}
+summary{list-style-position:inside}
 /* cards */
 .card{border:2px solid transparent;border-radius:10px;padding:3px;background:none;cursor:pointer;display:grid;gap:3px;text-align:left;box-shadow:none}
 .card:active{transform:none;box-shadow:none}
@@ -149,6 +150,17 @@ label.chk{display:flex;gap:8px;align-items:center;cursor:pointer;font-size:14px}
 .shot:nth-child(1){transform:rotate(-2.5deg)} .shot:nth-child(2){transform:rotate(1.5deg)} .shot:nth-child(3){transform:rotate(-1deg)}
 .shot:hover{border-color:var(--accent-fill);transform:rotate(0) translateY(-4px)}
 .credit{font-size:11.5px;text-align:center;margin-top:4px}
+.vibes{display:flex;flex-wrap:wrap;gap:8px}
+.vibe{padding:7px 14px;font-size:14px}
+.vibe[aria-checked="true"]::after{content:" ✓"}
+.vibe[aria-checked="true"]{background:var(--accent-fill);border-color:var(--accent-edge);color:var(--accent-fg);box-shadow:0 3px 0 var(--accent-edge)}
+.help{border:2px solid var(--line);border-radius:16px;padding:12px 16px;background:var(--panel2)}
+.help summary{cursor:pointer;font-weight:800}
+.help-body{display:grid;gap:10px;margin-top:12px}
+.help-body h3{margin-top:4px}
+.fixes{margin:0;display:grid;gap:2px}
+.fixes dt{font-weight:800;margin-top:6px}
+.fixes dd{margin:0;color:var(--fg);max-width:65ch}
 .shot:active{transform:rotate(0) translateY(0);box-shadow:0 2px 0 var(--line)}
 @media (max-width:520px){.shots{gap:8px}.shot{padding:4px 4px 6px}.shot span{font-size:11px}.shot small{display:none}}
 dialog.lightbox{border:0;padding:0;background:transparent;width:min(92vw,560px);max-width:none;color:var(--fg)}
@@ -277,7 +289,12 @@ nav.steps{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;bor
   <!-- STEP 3 -->
   <section class="step" data-step="3" hidden>
     <div><p class="eyebrow">Step 3 of 7</p><h2>Download the template and copy the prompt</h2></div>
-    <p class="lead">The prompt is written for you. Download the template, copy the prompt, and move on. Come back here only if ChatGPT gets something wrong.</p>
+    <p class="lead">The prompt is written for you. Pick a look, download the template, copy the prompt, and move on. Not happy with what ChatGPT makes? Come back and try another look.</p>
+    <div class="field">
+      <span>Pick a look</span>
+      <div class="vibes" id="vibes" role="radiogroup" aria-label="Look"></div>
+      <p class="hint" id="vibeHint"></p>
+    </div>
     <div class="field">
       <span>Your template</span>
       <div class="sheet" style="max-width:220px;margin:0"><canvas id="preview3" width="420" height="630"></canvas></div>
@@ -293,10 +310,10 @@ nav.steps{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;bor
       <pre class="prompt" id="promptOut"></pre>
     </div>
     <details class="field" id="advanced">
-      <summary class="hint" style="cursor:pointer;font-weight:600">Did ChatGPT get something wrong? Open this to guide it.</summary>
-      <p class="hint" style="margin-top:6px">Describe what is actually at the card's edges, as literally as you can. "A pale golden column with thin vertical lines" works; "a tree" makes the AI draw its own idea of a tree. The prompt updates as you type.</p>
-      <textarea id="scene" style="margin-top:6px">Continue the illustration outward from every edge of the card. Match the colours, linework and lighting exactly as they appear at the card's edges, and keep the same level of detail across the whole area.</textarea>
-      <button type="button" class="small" id="resetScene" style="justify-self:start;margin-top:6px">Reset to default</button>
+      <summary class="hint" style="cursor:pointer;font-weight:700">✏️ Add details (optional): tell the AI exactly what's at your card's edges</summary>
+      <p class="hint" style="margin-top:6px">Describe what you <b>see</b> as literally as you can: colours, shapes, textures and the art style. The prompt updates as you type.</p>
+      <textarea id="extra" style="margin-top:6px" placeholder="e.g. Watercolour style with soft edges. The left edge is a pale golden column with thin vertical lines. The sky is dark blue with small white stars."></textarea>
+      <button type="button" class="small" id="clearExtra" style="justify-self:start;margin-top:6px" hidden>Clear</button>
     </details>
     <nav class="steps"><button class="back">Back</button><button class="primary next">Next: generate in ChatGPT</button></nav>
   </section>
@@ -304,16 +321,46 @@ nav.steps{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;bor
   <!-- STEP 4 -->
   <section class="step" data-step="4" hidden>
     <div><p class="eyebrow">Step 4 of 7</p><h2>Let ChatGPT paint the rest</h2></div>
+    <p class="lead">The AI is clever but not perfect 🤖 The same prompt gives a different picture every time, so it's normal to try 2 to 4 times before you get one you love.</p>
     <ol class="todo">
       <li>Open ChatGPT and start a new chat.</li>
       <li>Pick an image-capable model. <b>GPT-5.6 Terra Max</b> has given the best results so far.</li>
       <li>Attach the template PNG you downloaded.</li>
       <li>Paste the prompt and send.</li>
-      <li>Look at the result. Your card should be untouched, the grey should be fully painted, and there should be no text, frames or lines inside the art. If something's off, ask for a fresh generation rather than a fix; one bad element tends to survive edits.</li>
+      <li>Look at the result. Your card should be untouched, the grey should be fully painted, and there should be no text, frames or lines inside the art. If something is clearly wrong, ask for a fresh try rather than a fix; for small tweaks, see the follow-ups below.</li>
       <li>Download the finished image at full size (not a screenshot).</li>
     </ol>
     <div class="row"><a class="btn primary" href="https://chatgpt.com/" target="_blank" rel="noopener">Open ChatGPT ↗</a></div>
-    <div class="note"><b>Tip:</b> if the model keeps thickening a tree trunk, adding a sun, or changing a pattern, go back a step and describe that part exactly as it looks at the card's edge ("a pale golden column with thin vertical lines", not "a tree").</div>
+    <details class="help">
+      <summary>😕 Not getting what you want? Tap for quick fixes</summary>
+      <div class="help-body">
+        <h3>Quick fixes</h3>
+        <dl class="fixes">
+          <dt>It feels like a "vibe" instead of the card's art style</dt>
+          <dd>In step 3, pick <b>🎯 Match the card</b> and, under <b>Add details</b>, name the style you see, like "watercolour" or "thick black outlines".</dd>
+          <dt>It changed or redrew my card</dt>
+          <dd>Start a <b>new chat</b>, attach the template again and resend.</dd>
+          <dt>It added things that aren't on the card (a sun, a tree, another Pokémon)</dt>
+          <dd>Under <b>Add details</b> in step 3, describe what's really at the card's edges, literally: "a pale golden column with thin vertical lines", not "a tree".</dd>
+          <dt>Text, frames, lines or grey patches in the art</dt>
+          <dd>Random glitches. Just try again, or send "Clean it up" below.</dd>
+        </dl>
+        <h3>Good habits</h3>
+        <ul class="todo">
+          <li><b>Use the best image model you can.</b> Paid plans and newer models follow instructions much more closely; free ones drift into "vibes" more often.</li>
+          <li><b>Try 2 or 3 times before changing the prompt.</b> Every picture is a roll of the dice.</li>
+          <li><b>Small tweak?</b> Ask in the same chat. <b>Something clearly wrong?</b> Start a new chat.</li>
+        </ul>
+        <h3>Almost there? Send a follow-up</h3>
+        <p class="hint">Tap to copy, then paste it into the same ChatGPT chat.</p>
+        <div class="row">
+          <button type="button" class="copy-fu" data-text="Keep the layout and my card exactly the same, but make the painted area match the card's art style more closely: the same linework, colours, shading and level of detail as the card itself." title="Keep the layout and my card exactly the same, but make the painted area match the card's art style more closely: the same linework, colours, shading and level of detail as the card itself.">📋 Closer to the card's style</button>
+          <button type="button" class="copy-fu" data-text="Keep everything else the same, but remove any text, frames, borders or lines inside the artwork, and make sure the whole grey area is painted right to the edges." title="Keep everything else the same, but remove any text, frames, borders or lines inside the artwork, and make sure the whole grey area is painted right to the edges.">📋 Clean it up</button>
+          <button type="button" class="copy-fu" data-text="Please try again from scratch with the same image and the same instructions." title="Please try again from scratch with the same image and the same instructions.">📋 Try again</button>
+        </div>
+        <p class="status" id="fuStatus"></p>
+      </div>
+    </details>
     <nav class="steps"><button class="back">Back</button><button class="primary next">Next: upscale</button></nav>
   </section>
 
@@ -420,7 +467,7 @@ const ICONS=['🔍','🧩','📝','🎨','✨','🖨️','✂️'], CHIPS=['--pi
 const $=id=>document.getElementById(id);
 
 // ---------- state ----------
-const state={ tray:[], selected:null, slots:Array(9).fill(null), step:1, final:null };
+const state={ tray:[], selected:null, slots:Array(9).fill(null), step:1, final:null, vibe:'match' };
 
 // ---------- steps ----------
 function showStep(n){
@@ -560,21 +607,57 @@ function buildPrompt(){
   const list=placed.map(({i})=>WORDS[i]);
   const where=placed.length? (many? `in the ${list.slice(0,-1).join(', ')} and ${list.slice(-1)} pockets` : `in the ${list[0]} pocket`) : 'on the page';
   const cw=many?'cards':'card';
+  const v=VIBES[state.vibe]||VIBES.match, extra=$('extra').value.trim();
+  const fill=t=>t.replace(/\{c\}/g,many?'each card':'the card').replace(/\{cs\}/g,many?"each card's":"the card's").replace(/\{cp\}/g,many?"the cards'":"the card's").replace(/\{cw\}/g,cw);
   const multi=many? `
 
 There are ${placed.length} cards, and each one may show a different scene, time of day or colour palette. The area around each card continues that card's own scene, colours and lighting. Where two scenes meet, blend them gradually and naturally across the space between them (for example daylight fading through dusk into night, or one landscape merging into another), so the whole page reads as a single picture with no hard seams, borders or dividing lines.` : '';
   return `Edit the attached image. Paint only inside the grey rectangle, filling it completely so that the ${cw} ${where} and the grey area become one continuous illustration. Leave the white border, the tick marks and the labels exactly as they are, and leave the ${cw} exactly as ${many?'they are':'it is'}.${multi}
 
-The scene: ${$('scene').value===DEFAULT_SCENE && many ? DEFAULT_SCENE.replace(/the card's edges/g,"each card's edges").replace(/of the card\b/,'of each card') : $('scene').value.trim()}
+The scene: ${fill(v.scene)}${extra?`
 
-Style: flat illustrative art matching the ${cw} exactly: same linework, colours, lighting and level of detail. The grey area contains only background, scenery, light and atmosphere from the ${many?"cards' worlds":"card's world"}. Nothing else.
+Important details: ${extra}`:''}
+
+Style: ${fill(v.style)} The grey area contains only background, scenery, light and atmosphere from the ${many?"cards' worlds":"card's world"}. Nothing else.
 
 Output at the same size as the attached image, at the highest resolution available.`;
 }
 function renderPrompt(){ $('promptOut').textContent=buildPrompt(); }
-$('scene').addEventListener('input',renderPrompt);
-const DEFAULT_SCENE=$('scene').value;
-$('resetScene').addEventListener('click',()=>{ $('scene').value=DEFAULT_SCENE; renderPrompt(); });
+$('extra').addEventListener('input',()=>{ $('clearExtra').hidden=!$('extra').value; renderPrompt(); });
+$('clearExtra').addEventListener('click',()=>{ $('extra').value=''; $('clearExtra').hidden=true; renderPrompt(); });
+
+// ---------- looks ("vibes"): swap the scene + style wording; the card-safety rules stay the same ----------
+const VIBES={
+  match:{label:'🎯 Match the card', hint:"Continues the card's own art as closely as possible. The best place to start.",
+    scene:"Continue the illustration outward from every edge of {c}. Match the colours, linework and lighting exactly as they appear at {cs} edges, and keep the same level of detail across the whole area.",
+    style:"flat illustrative art matching the {cw} exactly: same linework, colours, lighting and level of detail."},
+  dreamy:{label:'🌸 Soft & dreamy', hint:'Same colours, but softer and glowier. Lovely for cute or pastel cards.',
+    scene:"Continue the scene outward from every edge of {c}, keeping its colours and setting, but make the surroundings soft and dreamy: gentle light, a soft glow, a little haze and a few sparkles, with calmer detail further away from {c}.",
+    style:"soft, painterly illustration in {cp} colour palette, with smooth gradients and gentle light, still clearly the same world as the {cw}."},
+  epic:{label:'⚡ Big & dramatic', hint:'More sky, more scale, more drama. Great for legendary or battle cards.',
+    scene:"Continue the scene outward from every edge of {c} and make it feel big and dramatic: extend the sky and landscape, add depth and a sense of scale, and use strong lighting that comes from the same direction as the light in {c}.",
+    style:"cinematic illustration in {cp} colours and art style, with strong contrast and depth."},
+  calm:{label:'🍃 Calm & simple', hint:'A quieter background so the card stands out. Try this if results feel too busy.',
+    scene:"Continue the background outward from every edge of {c} in a calm, simple way: the same colours and setting, but fewer objects, larger simple shapes and plenty of open space, so {c} stays the centre of attention.",
+    style:"simple, clean illustration matching {cp} colours and linework, with low detail and no clutter."}
+};
+function renderVibes(){
+  const box=$('vibes'); box.innerHTML='';
+  Object.entries(VIBES).forEach(([k,v])=>{
+    const b=document.createElement('button'); b.type='button'; b.className='vibe'; b.setAttribute('role','radio');
+    b.setAttribute('aria-checked', String(state.vibe===k)); b.textContent=v.label;
+    b.addEventListener('click',()=>{ state.vibe=k; renderVibes(); renderPrompt(); });
+    box.appendChild(b);
+  });
+  $('vibeHint').textContent=VIBES[state.vibe].hint;
+}
+renderVibes();
+
+// ---------- step 4 copy-paste follow-ups ----------
+document.querySelectorAll('.copy-fu').forEach(b=>b.addEventListener('click',async()=>{
+  try{ await navigator.clipboard.writeText(b.dataset.text); setStatus('fuStatus','Copied. Paste it into the same ChatGPT chat.','ok'); }
+  catch(e){ window.prompt('Copy this message:', b.dataset.text); }
+}));
 
 // ---------- image loading ----------
 function loadImg(src, cors){
