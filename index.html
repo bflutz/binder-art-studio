@@ -248,8 +248,8 @@ nav.steps{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;bor
       <span>Binder pocket size</span>
       <div class="row">
         <select id="tileSize">
+          <option value="66x91" selected>66 × 91 mm — sleeved card size, fills the pocket, fits most modern pages (recommended)</option>
           <option value="63x88">63 × 88 mm — bare card size, fits every 9-pocket page</option>
-          <option value="66x91">66 × 91 mm — sleeved card size, fills the pocket, fits most modern pages</option>
           <option value="custom">Custom — I measured my binder</option>
         </select>
         <span id="customSize" class="row" hidden>
@@ -339,7 +339,7 @@ nav.steps{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;bor
       <span>Upscaled image from step 5</span>
       <input type="file" id="finalUpload" accept="image/*">
     </div>
-    <p class="hint">Tiles will be cut at <b id="sizeEcho">63 × 88 mm</b>, the pocket size you chose in step 2.</p>
+    <p class="hint">Tiles will be cut at <b id="sizeEcho">66 × 91 mm</b>, the pocket size you chose in step 2.</p>
     <div id="finalBox" hidden>
       <label class="chk" style="margin-bottom:10px"><input type="checkbox" id="optGuide"> Draw faint cut lines across the picture (easier to cut; a tiny hairline may show on an edge if a cut is off)</label>
       <div class="sheet a4"><canvas id="finalPreview" width="620" height="877"></canvas><div class="slots static a4" id="finalSlots"></div></div>
@@ -371,7 +371,7 @@ nav.steps{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;bor
       <li><b>Score first.</b> Line a metal ruler up between the matching marks at the top and bottom of the page and run the knife along it lightly, just enough to scratch the surface. Do this for both vertical lines and both horizontal lines. The page stays in one piece, but the grooves are now in.</li>
       <li><b>Cut the two vertical lines</b> top to bottom, using the top and bottom marks. You now have three tall strips.</li>
       <li><b>Cut each strip</b> at its two horizontal marks. The marks are still there at the ends of every strip.</li>
-      <li><b>Trim the white edges last.</b> Each tile should measure the size you picked in step 6 (63 × 88 mm or 66 × 91 mm). A hair off is fine; the extra art at the edges covers it.</li>
+      <li><b>Trim the white edges last.</b> Each tile should measure the size you picked in step 2 (66 × 91 mm or 63 × 88 mm). A hair off is fine; the extra art at the edges covers it.</li>
       <li>Slide each tile into its pocket, matching the layout from step 2. Put your real card in last.</li>
     </ol>
     <div class="note"><b>Clean cuts:</b> a fresh blade, a cutting mat and two light passes beat one heavy pass. Scissors work in a pinch, but a ruler and knife keep the edges straight. If you ticked "faint cut lines" in step 6, cut right down the middle of the dashed line.</div>
