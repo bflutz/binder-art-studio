@@ -173,6 +173,10 @@ dialog.modal::backdrop{background:rgba(58,36,64,.6);backdrop-filter:blur(4px)}
 .modal-card{background:var(--panel);border:2px solid var(--line);border-radius:22px;padding:22px;display:grid;gap:12px}
 .modal-card .row{margin-top:4px}
 .addr{font-weight:800;color:var(--accent);user-select:all}
+.fb-form{display:grid;gap:10px}
+.fb-form textarea{min-height:120px}
+.fb-email{display:grid;gap:8px;border-top:2px dashed var(--line);padding-top:12px}
+.hp{position:absolute!important;left:-9999px!important;width:1px;height:1px;opacity:0}
 footer{max-width:760px;margin:22px auto 0;text-align:center;font-size:12.5px;font-weight:700;color:var(--muted);text-wrap:balance}
 /* nav */
 nav.steps{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;border-top:2px dashed var(--line);padding-top:16px}
@@ -437,13 +441,25 @@ nav.steps{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;bor
 <dialog class="modal" id="feedback" aria-labelledby="fbTitle">
   <div class="modal-card">
     <h2 id="fbTitle">Send feedback 💌</h2>
-    <p>Thanks for trying the beta! Tell me what worked, what was confusing, or what broke. Photos of your finished pages are very welcome.</p>
-    <div class="row">
-      <a class="btn primary" id="fbGmail" target="_blank" rel="noopener">Write in Gmail ↗</a>
-      <a class="btn" id="fbMail">Use my email app</a>
-    </div>
-    <p class="hint">Or email <span class="addr" id="fbAddr"></span> <button type="button" class="small" id="fbCopy">Copy address</button></p>
+    <p>Thanks for trying the beta! Tell me what worked, what was confusing, or what broke.</p>
+    <form id="fbForm" class="fb-form" hidden>
+      <div class="vibes" id="fbTypes" role="radiogroup" aria-label="Kind of feedback"></div>
+      <textarea id="fbMsg" maxlength="3000" aria-label="Your feedback" placeholder="What worked, what was confusing, what broke?"></textarea>
+      <input type="text" id="fbName" maxlength="60" autocomplete="name" placeholder="Your name (optional)" aria-label="Your name (optional)">
+      <input type="text" id="fbHp" class="hp" tabindex="-1" autocomplete="off" aria-hidden="true" placeholder="Leave empty">
+      <p class="hint">Along with your message I'll see which step you were on and whether you're on a phone or computer. Nothing else.</p>
+      <div class="row"><button type="submit" class="primary" id="fbSend">Send feedback</button></div>
+    </form>
     <p class="status" id="fbStatus"></p>
+    <div class="fb-email">
+      <p class="hint" id="fbEmailIntro">Prefer email? It's also the best way to send photos of your pages 📸</p>
+      <div class="row">
+        <a class="btn small" id="fbGmail" target="_blank" rel="noopener">Write in Gmail ↗</a>
+        <a class="btn small" id="fbMail">Use my email app</a>
+        <button type="button" class="small" id="fbCopy">Copy address</button>
+      </div>
+      <p class="hint">Address: <span class="addr" id="fbAddr"></span></p>
+    </div>
     <div class="row" style="justify-content:flex-end"><button type="button" class="small" id="fbClose">Close</button></div>
   </div>
 </dialog>
@@ -848,7 +864,46 @@ function openFeedback(e){
   $('fbMail').href=`mailto:${FB_TO}?subject=${su}&body=${body}`;
   $('fbGmail').href=`https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(FB_TO)}&su=${su}&body=${body}`;
   setStatus('fbStatus','');
-  if(fb.showModal) fb.showModal(); else location.href=$('fbMail').href;
+  if(fb.showModal){ fb.showModal(); if(FEEDBACK_URL) $('fbMsg').focus(); } else location.href=$('fbMail').href;
+}
+// Feedback form -> Google Apps Script relay -> private GitHub issue. Empty URL = email only.
+const FEEDBACK_URL='';
+const FB_TYPES={idea:'💡 Idea', bug:'🐛 Something broke', praise:'💖 Love it', other:'💬 Other'};
+state.fbType='idea';
+function renderFbTypes(){
+  const box=$('fbTypes'); box.innerHTML='';
+  Object.entries(FB_TYPES).forEach(([k,label])=>{
+    const b=document.createElement('button'); b.type='button'; b.className='vibe'; b.setAttribute('role','radio');
+    b.setAttribute('aria-checked',String(state.fbType===k)); b.textContent=label;
+    b.addEventListener('click',()=>{ state.fbType=k; renderFbTypes(); });
+    box.appendChild(b);
+  });
+}
+function deviceLabel(){
+  const ua=navigator.userAgent;
+  const br=/Edg\//.test(ua)?'Edge':/OPR\//.test(ua)?'Opera':/Firefox\//.test(ua)?'Firefox':/Chrome\//.test(ua)?'Chrome':/Safari\//.test(ua)?'Safari':'other browser';
+  return (matchMedia('(pointer:coarse)').matches?'phone/tablet':'computer')+', '+br;
+}
+if(FEEDBACK_URL){
+  $('fbForm').hidden=false; renderFbTypes();
+  $('fbEmailIntro').textContent='Prefer email? It’s also the best way to send photos of your pages 📸';
+  $('fbForm').addEventListener('submit',async e=>{
+    e.preventDefault();
+    const message=$('fbMsg').value.trim();
+    if(message.length<3){ setStatus('fbStatus','Write a few words first 🙂','err'); $('fbMsg').focus(); return; }
+    $('fbSend').disabled=true; setStatus('fbStatus','Sending…');
+    try{
+      const r=await fetch(FEEDBACK_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},
+        body:JSON.stringify({message, name:$('fbName').value.trim(), type:state.fbType, step:state.step, look:state.vibe, device:deviceLabel(), website:$('fbHp').value})});
+      const j=await r.json();
+      if(!j.ok) throw new Error(j.error||'failed');
+      $('fbMsg').value=''; setStatus('fbStatus','Sent! Thank you so much 💖','ok');
+    }catch(err){
+      setStatus('fbStatus', err.message==='busy' ? 'Lots of feedback right now. Please try again in a bit, or use email below.' : 'Sorry, that didn’t send. Please use email below instead.','err');
+    }finally{ $('fbSend').disabled=false; }
+  });
+} else {
+  $('fbEmailIntro').textContent='Send it by email. Photos of your pages are very welcome 📸';
 }
 document.querySelectorAll('.fb-open').forEach(b=>b.addEventListener('click',openFeedback));
 $('fbCopy').addEventListener('click',async()=>{
