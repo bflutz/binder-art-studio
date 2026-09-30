@@ -893,13 +893,19 @@ if(FEEDBACK_URL){
     if(message.length<3){ setStatus('fbStatus','Write a few words first 🙂','err'); $('fbMsg').focus(); return; }
     $('fbSend').disabled=true; setStatus('fbStatus','Sending…');
     try{
-      const r=await fetch(FEEDBACK_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},
-        body:JSON.stringify({message, name:$('fbName').value.trim(), type:state.fbType, step:state.step, look:state.vibe, device:deviceLabel(), website:$('fbHp').value})});
-      const j=await r.json();
+      let j;
+      try{
+        const r=await fetch(FEEDBACK_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},
+          body:JSON.stringify({message, name:$('fbName').value.trim(), type:state.fbType, step:state.step, look:state.vibe, device:deviceLabel(), website:$('fbHp').value})});
+        j=await r.json();
+      }catch(netErr){ throw new Error('unconfirmed'); }
       if(!j.ok) throw new Error(j.error||'failed');
       $('fbMsg').value=''; setStatus('fbStatus','Sent! Thank you so much 💖','ok');
     }catch(err){
-      setStatus('fbStatus', err.message==='busy' ? 'Lots of feedback right now. Please try again in a bit, or use email below.' : 'Sorry, that didn’t send. Please use email below instead.','err');
+      const why=err.message;
+      setStatus('fbStatus', why==='busy' ? 'Lots of feedback right now. Please try again in a bit, or use email below.'
+        : why==='unconfirmed' ? 'Hmm, I couldn’t confirm it was sent. It has probably arrived, so no need to resend; use email below if you want to be sure.'
+        : 'Sorry, that didn’t send. Please use email below instead.','err');
     }finally{ $('fbSend').disabled=false; }
   });
 } else {
