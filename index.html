@@ -1,0 +1,594 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+</head>
+<body>
+<title>Binder Art Studio</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Manrope:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: a single-column guided walkthrough. One step at a time, a progress rail on top, Back/Next at the bottom. Warm paper ground, foil-gold accent. */
+:root{
+  --bg:#f3f0ea; --panel:#ffffff; --panel2:#ebe7df; --line:#d8d2c6; --fg:#1d1a16; --muted:#6b645a;
+  --accent:#b8860b; --accent-fg:#ffffff; --accent-soft:#f5e9c8; --danger:#b0413e; --ok:#2f7d4f;
+  --display:"Bricolage Grotesque","Manrope",system-ui,sans-serif; --body:"Manrope",system-ui,-apple-system,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#17161a; --panel:#211f25; --panel2:#2a2830; --line:#3a3742; --fg:#ece8e0; --muted:#a39d92;
+  --accent:#e2b02d; --accent-fg:#1a1508; --accent-soft:#3a3020; --danger:#e0736f; --ok:#6fc48f; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#17161a; --panel:#211f25; --panel2:#2a2830; --line:#3a3742; --fg:#ece8e0; --muted:#a39d92;
+  --accent:#e2b02d; --accent-fg:#1a1508; --accent-soft:#3a3020; --danger:#e0736f; --ok:#6fc48f; color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.55;margin:0;padding-inline:16px;padding-block:16px 40px}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0}
+h1{font-size:24px;font-weight:700;letter-spacing:-.01em}
+h2{font-size:22px;font-weight:700}
+h3{font-size:15px;font-weight:700}
+p{margin:0}
+a{color:var(--accent)}
+.wrap{max-width:760px;margin:0 auto;display:grid;gap:18px}
+header{display:grid;gap:4px}
+header p{color:var(--muted)}
+/* progress rail */
+.rail{display:flex;gap:6px;flex-wrap:wrap}
+.rail button{flex:1 1 80px;border:0;background:var(--panel2);color:var(--muted);border-radius:6px;padding:8px 6px;font:600 12px var(--body);cursor:pointer;display:grid;gap:2px;text-align:left;min-width:0}
+.rail button b{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.rail button span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rail button.done{background:var(--accent-soft);color:var(--fg)}
+.rail button.active{background:var(--accent);color:var(--accent-fg)} .rail button.active b{color:var(--accent-fg);opacity:.85}
+/* step card */
+.step{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:20px;display:grid;gap:16px;min-width:0}
+.step[hidden]{display:none}
+.eyebrow{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+.lead{font-size:16px;max-width:62ch}
+.todo{display:grid;gap:8px;padding-left:22px;margin:0;max-width:65ch}
+.todo li::marker{font-weight:700;color:var(--accent)}
+.note{background:var(--panel2);border-radius:8px;padding:12px 14px;font-size:14px;color:var(--muted);max-width:65ch}
+.note b{color:var(--fg)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+input[type=text],input[type=search],textarea{font:inherit;color:var(--fg);background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:9px 11px;width:100%;min-width:0}
+input[type=search]{flex:1 1 200px;width:auto}
+textarea{resize:vertical;min-height:110px;line-height:1.45}
+input:focus-visible,textarea:focus-visible,button:focus-visible,.slot:focus-visible,.card:focus-visible,.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button,.btn{font:inherit;font-weight:600;border:1px solid var(--line);background:var(--panel2);color:var(--fg);border-radius:6px;padding:9px 14px;cursor:pointer;text-decoration:none;display:inline-block}
+button:hover,.btn:hover{border-color:var(--accent)}
+.primary{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+button.small{padding:5px 9px;font-size:12px}
+button:disabled{opacity:.5;cursor:default}
+.status{font-size:13px;min-height:1.2em}
+.status.err{color:var(--danger)} .status.ok{color:var(--ok)}
+.field{display:grid;gap:4px;align-content:start}
+.field>span{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.hint{color:var(--muted);font-size:13px}
+/* cards */
+.results{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:10px;max-height:340px;overflow:auto;padding:2px}
+.card{border:2px solid transparent;border-radius:6px;padding:0;background:none;cursor:pointer;display:grid;gap:3px;text-align:left}
+.card img{width:100%;aspect-ratio:63/88;object-fit:cover;border-radius:4px;background:var(--panel2);display:block;-webkit-user-drag:none;pointer-events:none}
+.card span{font-size:11px;line-height:1.25;color:var(--muted);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.card.selected{border-color:var(--accent);background:var(--accent-soft)}
+.tray{display:flex;gap:10px;flex-wrap:wrap;min-height:40px}
+.tray .card{width:84px;touch-action:none;user-select:none;-webkit-user-select:none}
+.ghost{position:fixed;pointer-events:none;z-index:50;width:84px;aspect-ratio:63/88;border-radius:4px;box-shadow:0 10px 30px rgba(0,0,0,.4);opacity:.9;transform:translate(-50%,-50%)}
+.ghost img{width:100%;height:100%;object-fit:cover;border-radius:4px;display:block}
+.slot.over{background:rgba(226,176,45,.35);border-color:#e2b02d;border-style:solid}
+.slots .slot{touch-action:none}
+/* page */
+.sheet{position:relative;width:100%;max-width:440px;margin:0 auto;aspect-ratio:210/315;background:#fff;border:1px solid var(--line);box-shadow:0 8px 30px rgba(0,0,0,.15);overflow:hidden}
+.sheet canvas,.sheet img{position:absolute;inset:0;width:100%;height:100%;display:block}
+.slots{position:absolute;left:5%;top:8.0952%;width:90%;height:83.8095%;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr)}
+.slot{border:1px dashed rgba(255,255,255,.55);background:transparent;cursor:pointer;display:grid;place-items:center;color:#fff;font:600 11px var(--body);text-shadow:0 1px 2px rgba(0,0,0,.6);padding:0;border-radius:0}
+.slot:hover{background:rgba(255,255,255,.14)}
+.slot.filled{border-style:solid;border-color:rgba(226,176,45,.9)}
+.slot .lbl{background:rgba(0,0,0,.55);padding:2px 6px;border-radius:4px;max-width:90%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.slots.static .slot{pointer-events:none}
+.sheet.a4{aspect-ratio:210/297}
+.slots.a4{top:5.5556%;height:88.8889%}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);justify-content:center}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-2px;margin-right:5px}
+pre.prompt{white-space:pre-wrap;font:13px/1.5 var(--body);background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:12px;margin:0;max-height:260px;overflow:auto;min-width:0}
+.checks{display:grid;gap:6px;padding-left:22px;margin:0;font-size:14px}
+label.chk{display:flex;gap:8px;align-items:center;cursor:pointer;font-size:14px}
+/* nav */
+nav.steps{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:14px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:640px){.two{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:no-preference){button,.btn{transition:border-color .15s,background .15s}}
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Binder Art Studio</h1>
+    <p>Turn one favourite card into a full 9-pocket binder page. Seven steps, one at a time.</p>
+  </header>
+
+  <div class="rail" id="rail" role="tablist" aria-label="Steps"></div>
+
+  <!-- STEP 1 -->
+  <section class="step" data-step="1">
+    <div><p class="eyebrow">Step 1 of 7</p><h2>Find the card you want to build around</h2></div>
+    <p class="lead">Type the card's name and open the official card database. Save the card picture from there, then upload it here.</p>
+    <ol class="todo">
+      <li>Type the name and press <b>Search on pokemon.com</b>. It opens in a new tab.</li>
+      <li>Find the card you like, click it, then right-click the big card picture and choose <b>Save image as…</b>.</li>
+      <li>Come back here and upload that picture.</li>
+    </ol>
+    <form id="searchForm" class="row" autocomplete="off">
+      <input type="search" id="q" placeholder="Card name, e.g. Mew ex" aria-label="Card name">
+      <a class="btn primary" id="searchLink" href="https://www.pokemon.com/us/pokemon-tcg/pokemon-cards" target="_blank" rel="noopener">Search on pokemon.com ↗</a>
+    </form>
+    <div class="field">
+      <span>Upload the card picture</span>
+      <input type="file" id="upload" accept="image/*" multiple>
+      <p class="status" id="searchStatus"></p>
+    </div>
+    <div class="field">
+      <span>Your cards</span>
+      <div class="tray" id="tray"></div>
+    </div>
+    <nav class="steps"><span></span><button class="primary next">Next: arrange on the page</button></nav>
+  </section>
+
+  <!-- STEP 2 -->
+  <section class="step" data-step="2" hidden>
+    <div><p class="eyebrow">Step 2 of 7</p><h2>Put your card on the page</h2></div>
+    <p class="lead">Drag a card from your cards onto a pocket. Drag it again to move it, or tap a placed card to remove it. One card in the middle is the classic look. Two or more cards work too, for example a day card on the left and a night card on the right; the AI will be asked to blend the scenes across the page.</p>
+    <div class="field"><span>Your cards</span><div class="tray" id="tray2"></div></div>
+    <div class="field">
+      <span>Binder pocket size</span>
+      <div class="row">
+        <select id="tileSize" style="font:inherit;color:var(--fg);background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:8px 10px;max-width:100%">
+          <option value="63x88">63 × 88 mm — bare card size, fits every 9-pocket page</option>
+          <option value="66x91">66 × 91 mm — sleeved card size, fills the pocket, fits most modern pages</option>
+          <option value="custom">Custom — I measured my binder</option>
+        </select>
+        <span id="customSize" class="row" hidden>
+          <input type="text" id="tileW" value="66" inputmode="decimal" style="width:70px" aria-label="Tile width mm"> ×
+          <input type="text" id="tileH" value="91" inputmode="decimal" style="width:70px" aria-label="Tile height mm"> mm
+        </span>
+      </div>
+      <p class="hint">This sets how big each tile is cut. Not sure? Measure the inside of one pocket with a ruler and take 2 mm off each side, so the tile slides in without bowing. Bigger looks better; over is worse than under.</p>
+    </div>
+    <div class="row">
+      <button class="small" id="clearBtn">Clear the page</button>
+    </div>
+    <div class="sheet">
+      <canvas id="preview" width="620" height="930"></canvas>
+      <div class="slots" id="slots"></div>
+    </div>
+    <div class="legend">
+      <span><i style="background:#808080"></i>Grey: the AI paints this</span>
+      <span><i style="background:#e2b02d"></i>Gold: your card</span>
+    </div>
+    <p class="status" id="slotStatus"></p>
+    <nav class="steps"><button class="back">Back</button><button class="primary next">Next: check the prompt</button></nav>
+  </section>
+
+  <!-- STEP 3 -->
+  <section class="step" data-step="3" hidden>
+    <div><p class="eyebrow">Step 3 of 7</p><h2>Download the template and copy the prompt</h2></div>
+    <p class="lead">The prompt is written for you. Download the template, copy the prompt, and move on. Come back here only if ChatGPT gets something wrong.</p>
+    <div class="field">
+      <span>Your template</span>
+      <div class="sheet" style="max-width:220px;margin:0"><canvas id="preview3" width="420" height="630"></canvas></div>
+    </div>
+    <div class="row">
+      <button class="primary" id="dlPng">Download template (PNG)</button>
+      <button id="copyPrompt">Copy prompt</button>
+      <button id="dlPrompt">Download prompt (.txt)</button>
+    </div>
+    <p class="status" id="dlStatus"></p>
+    <div class="field">
+      <span>The prompt</span>
+      <pre class="prompt" id="promptOut"></pre>
+    </div>
+    <details class="field" id="advanced">
+      <summary class="hint" style="cursor:pointer;font-weight:600">Did ChatGPT get something wrong? Open this to guide it.</summary>
+      <p class="hint" style="margin-top:6px">Describe what is actually at the card's edges, as literally as you can. "A pale golden column with thin vertical lines" works; "a tree" makes the AI draw its own idea of a tree. The prompt updates as you type.</p>
+      <textarea id="scene" style="margin-top:6px">Continue the illustration outward from every edge of the card. Match the colours, linework and lighting exactly as they appear at the card's edges, and keep the same level of detail across the whole area.</textarea>
+      <button type="button" class="small" id="resetScene" style="justify-self:start;margin-top:6px">Reset to default</button>
+    </details>
+    <nav class="steps"><button class="back">Back</button><button class="primary next">Next: generate in ChatGPT</button></nav>
+  </section>
+
+  <!-- STEP 4 -->
+  <section class="step" data-step="4" hidden>
+    <div><p class="eyebrow">Step 4 of 7</p><h2>Let ChatGPT paint the rest</h2></div>
+    <ol class="todo">
+      <li>Open ChatGPT and start a new chat.</li>
+      <li>Pick an image-capable model. <b>GPT-5.6 Terra Max</b> has given the best results so far.</li>
+      <li>Attach the template PNG you downloaded.</li>
+      <li>Paste the prompt and send.</li>
+      <li>Look at the result. Your card should be untouched, the grey should be fully painted, and there should be no text, frames or lines inside the art. If something's off, ask for a fresh generation rather than a fix; one bad element tends to survive edits.</li>
+      <li>Download the finished image at full size (not a screenshot).</li>
+    </ol>
+    <div class="row"><a class="btn primary" href="https://chatgpt.com/" target="_blank" rel="noopener">Open ChatGPT ↗</a></div>
+    <div class="note"><b>Tip:</b> if the model keeps thickening a tree trunk, adding a sun, or changing a pattern, go back a step and describe that part exactly as it looks at the card's edge ("a pale golden column with thin vertical lines", not "a tree").</div>
+    <nav class="steps"><button class="back">Back</button><button class="primary next">Next: upscale</button></nav>
+  </section>
+
+  <!-- STEP 5 -->
+  <section class="step" data-step="5" hidden>
+    <div><p class="eyebrow">Step 5 of 7</p><h2>Make it sharp enough to print</h2></div>
+    <p class="lead">ChatGPT always saves images at 1024 × 1536 pixels, no matter what you ask for, and that's too small for a crisp A4 print. An upscaler adds the missing detail. You want at least <b>2480 pixels wide</b> (that's A4 at 300 dpi).</p>
+    <ol class="todo">
+      <li>Open a free upscaler. <a href="https://imgupscaler.com/" target="_blank" rel="noopener">imgupscaler.com</a> works in the browser with nothing to install and has given good results. <a href="https://upscayl.org/" target="_blank" rel="noopener">Upscayl</a> is a free app for Windows and Mac if you'd rather work offline.</li>
+      <li>Load the image from ChatGPT and choose <b>4×</b> (3× also works; 2× is not quite enough). Pick a "digital art" or "illustration" model if the tool offers one.</li>
+      <li>Save the result as PNG. Check the size: it should be around 2500 pixels wide or more.</li>
+    </ol>
+    <div class="row"><a class="btn primary" href="https://imgupscaler.com/" target="_blank" rel="noopener">Open imgupscaler.com ↗</a></div>
+    <div class="note"><b>Why not just ask ChatGPT for a bigger file?</b> It doesn't help. Asking for "4K" or a pixel size changes the style it aims for, not the size it saves.</div>
+    <nav class="steps"><button class="back">Back</button><button class="primary next">Next: print</button></nav>
+  </section>
+
+  <!-- STEP 6 -->
+  <section class="step" data-step="6" hidden>
+    <div><p class="eyebrow">Step 6 of 7</p><h2>Print it</h2></div>
+    <p class="lead">Optional but recommended: drop your upscaled image here and the app will trim it to A4 and rebuild the sheet with clean cut marks and a little extra art past each edge, so a slightly off cut never shows white.</p>
+    <div class="field">
+      <span>Upscaled image from step 5</span>
+      <input type="file" id="finalUpload" accept="image/*">
+    </div>
+    <p class="hint">Tiles will be cut at <b id="sizeEcho">63 × 88 mm</b>, the pocket size you chose in step 2.</p>
+    <div id="finalBox" hidden>
+      <label class="chk" style="margin-bottom:10px"><input type="checkbox" id="optGuide"> Draw faint cut lines across the picture (easier to cut; a tiny hairline may show on an edge if a cut is off)</label>
+      <div class="sheet a4"><canvas id="finalPreview" width="620" height="877"></canvas><div class="slots static a4" id="finalSlots"></div></div>
+      <p class="hint" style="text-align:center;margin-top:8px">The dashed lines show where the cuts will go. If they don't line up with the pockets in your image, the AI changed the layout; print the image directly instead.</p>
+      <div class="row" style="margin-top:10px"><button class="primary" id="dlFinal">Download print sheet (PNG)</button></div>
+      <p class="status" id="finalStatus"></p>
+    </div>
+    <h3>Printer settings</h3>
+    <ol class="todo">
+      <li>Paper size <b>A4</b>, scale <b>100% / Actual size</b>. Never "Fit to page", or the cards come out the wrong size.</li>
+      <li>Paper type set to <b>Photo paper, glossy</b>, quality <b>High</b> or <b>Best</b>.</li>
+      <li>Borderless printing <b>off</b>. The cut marks live in the margin.</li>
+    </ol>
+    <h3>Paper and printer</h3>
+    <ul class="todo">
+      <li>Glossy photo paper, <b>200 to 260 gsm</b>. It gives the colours the punch of a real card and feels right in the pocket. Ordinary paper works but looks flat.</li>
+      <li>A photo printer such as the <b>Epson EcoTank L8050</b> (six inks, very cheap per page) prints these beautifully. A standard home inkjet is fine too.</li>
+      <li>No photo printer? A print shop can do a single glossy A4 for a few rand and will often cut it for you if you point out the marks.</li>
+    </ul>
+    <nav class="steps"><button class="back">Back</button><button class="primary next">Next: cut and bind</button></nav>
+  </section>
+
+  <!-- STEP 7 -->
+  <section class="step" data-step="7" hidden>
+    <div><p class="eyebrow">Step 7 of 7</p><h2>Cut it out and fill the binder</h2></div>
+    <p class="lead">The trick is the order. Do the inside cuts first while the page is whole, and trim the white edges last, so every cut still has its marks.</p>
+    <ol class="todo">
+      <li>Let the print dry for a few minutes; glossy ink smudges when fresh.</li>
+      <li><b>Score first.</b> Line a metal ruler up between the matching marks at the top and bottom of the page and run the knife along it lightly, just enough to scratch the surface. Do this for both vertical lines and both horizontal lines. The page stays in one piece, but the grooves are now in.</li>
+      <li><b>Cut the two vertical lines</b> top to bottom, using the top and bottom marks. You now have three tall strips.</li>
+      <li><b>Cut each strip</b> at its two horizontal marks. The marks are still there at the ends of every strip.</li>
+      <li><b>Trim the white edges last.</b> Each tile should measure the size you picked in step 6 (63 × 88 mm or 66 × 91 mm). A hair off is fine; the extra art at the edges covers it.</li>
+      <li>Slide each tile into its pocket, matching the layout from step 2. Put your real card in last.</li>
+    </ol>
+    <div class="note"><b>Clean cuts:</b> a fresh blade, a cutting mat and two light passes beat one heavy pass. Scissors work in a pinch, but a ruler and knife keep the edges straight. If you ticked "faint cut lines" in step 6, cut right down the middle of the dashed line.</div>
+    <nav class="steps"><button class="back">Back</button><button class="primary" id="restart">Start another page</button></nav>
+  </section>
+</div>
+
+<script>
+(() => {
+'use strict';
+// ---------- constants (mm) ----------
+const PW=210, PH=297, TPH=315, TW=63, TH=88, BW=3*TW, BH=3*TH, MX=(PW-BW)/2, MY=(PH-BH)/2, TMY=(TPH-BH)/2;
+const DPI=300, PPM=DPI/25.4, px=mm=>Math.round(mm*PPM);
+const GREY='#808080', STEPS=['Cards','Arrange','Prompt','ChatGPT','Upscale','Print','Cut'];
+const $=id=>document.getElementById(id);
+
+// ---------- state ----------
+const state={ tray:[], selected:null, slots:Array(9).fill(null), step:1, final:null };
+
+// ---------- steps ----------
+function showStep(n){
+  state.step=n;
+  document.querySelectorAll('.step').forEach(s=>{ s.hidden=+s.dataset.step!==n; });
+  renderRail();
+  if(n===2){ renderTray(); render(); }
+  if(n===3){ drawTo($('preview3')); renderPrompt(); }
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function renderRail(){
+  const r=$('rail'); r.innerHTML='';
+  STEPS.forEach((name,i)=>{
+    const b=document.createElement('button'); b.type='button'; b.setAttribute('role','tab');
+    b.className=(i+1===state.step?'active':(i+1<state.step?'done':''));
+    b.innerHTML=`<b>Step ${i+1}</b><span>${name}</span>`;
+    b.addEventListener('click',()=>showStep(i+1)); r.appendChild(b);
+  });
+}
+document.querySelectorAll('.next').forEach(b=>b.addEventListener('click',()=>showStep(Math.min(7,state.step+1))));
+document.querySelectorAll('.back').forEach(b=>b.addEventListener('click',()=>showStep(Math.max(1,state.step-1))));
+$('restart').addEventListener('click',()=>{ state.slots=Array(9).fill(null); state.final=null; state.finalBlock=null; $('finalBox').hidden=true; showStep(1); });
+
+// ---------- rendering ----------
+const full=document.createElement('canvas'); full.width=px(PW); full.height=px(TPH);
+const fullA4=document.createElement('canvas'); fullA4.width=px(PW); fullA4.height=px(PH);
+function tileSize(){
+  const v=$('tileSize').value;
+  if(v==='63x88') return [63,88]; if(v==='66x91') return [66,91];
+  const w=parseFloat($('tileW').value), h=parseFloat($('tileH').value);
+  return [Math.min(68,Math.max(55,w||66)), Math.min(96,Math.max(80,h||91))];
+}
+function draw(ctx, W, H, scale){
+  const p=mm=>mm*PPM*scale;
+  const [TW,TH]=tileSize(), BW=3*TW, BH=3*TH, MX=(PW-BW)/2, TMY=(TPH-BH)/2;
+  ctx.fillStyle='#fff'; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle=GREY; ctx.fillRect(p(MX),p(TMY),p(BW),p(BH));
+  state.slots.forEach((s,i)=>{ if(s&&s.img) drawCover(ctx,s.img,p(MX+(i%3)*TW),p(TMY+Math.floor(i/3)*TH),p(TW),p(TH)); });
+  const col='#282828'; ctx.strokeStyle=col; ctx.fillStyle=col; ctx.lineWidth=Math.max(1,p(0.3));
+  const gap=1.5, lnx=Math.max(2,Math.min(8,MX-gap-1)), lny=Math.max(2,Math.min(8,TMY-gap-1));
+  ctx.beginPath();
+  for(let i=0;i<4;i++){
+    const x=MX+i*TW, y=TMY+i*TH;
+    ctx.moveTo(p(x),p(TMY-gap)); ctx.lineTo(p(x),p(TMY-gap-lny));
+    ctx.moveTo(p(x),p(TMY+BH+gap)); ctx.lineTo(p(x),p(TMY+BH+gap+lny));
+    ctx.moveTo(p(MX-gap),p(y)); ctx.lineTo(p(MX-gap-lnx),p(y));
+    ctx.moveTo(p(MX+BW+gap),p(y)); ctx.lineTo(p(MX+BW+gap+lnx),p(y));
+  }
+  ctx.stroke();
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.font=`${p(2.6)}px Manrope, system-ui, sans-serif`;
+  for(let i=0;i<3;i++){
+    ctx.fillText(TW+' mm', p(MX+i*TW+TW/2), p(TMY-gap-lny-2.5));
+    if(MX>=13){ ctx.textAlign='right'; ctx.fillText(TH+' mm', p(MX-gap-lnx-1.5), p(TMY+i*TH+TH/2)); ctx.textAlign='center'; }
+  }
+  ctx.font=`${p(3.2)}px Manrope, system-ui, sans-serif`;
+  ctx.fillText(`9 tiles of ${TW} x ${TH} mm, no gaps  |  card = actual card, grey = artwork to be filled`, p(PW/2), p(TPH-TMY/2-2));
+}
+function drawCover(ctx,img,x,y,w,h){
+  const ir=img.naturalWidth/img.naturalHeight, tr=w/h;
+  let sw=img.naturalWidth, sh=img.naturalHeight, sx=0, sy=0;
+  if(ir>tr){ sw=sh*tr; sx=(img.naturalWidth-sw)/2; } else { sh=sw/tr; sy=(img.naturalHeight-sh)/2; }
+  ctx.drawImage(img,sx,sy,sw,sh,x,y,w,h);
+}
+function drawTo(cv){ draw(cv.getContext('2d'), cv.width, cv.height, cv.width/px(PW)); }
+function render(){ placeOverlay(); drawTo($('preview')); renderSlots(); }
+function renderSlots(){
+  const box=$('slots'); box.innerHTML='';
+  state.slots.forEach((s,i)=>{
+    const b=document.createElement('button'); b.type='button'; b.className='slot'+(s?' filled':''); b.dataset.i=i;
+    b.setAttribute('aria-label', s?`Pocket ${i+1}: ${s.name}. Drag to move, tap to remove`:`Pocket ${i+1}: empty. Drop a card here`);
+    if(s){ const l=document.createElement('span'); l.className='lbl'; l.textContent=s.name; b.appendChild(l);
+      b.addEventListener('pointerdown',e=>startDrag(e,s,i)); }
+    else b.addEventListener('click',()=>{ if(state.selected){ state.slots[i]=state.selected; render(); } else setStatus('slotStatus','Drag a card from your cards onto this pocket.','err'); });
+    box.appendChild(b);
+  });
+}
+function renderTray(){
+  ['tray','tray2'].forEach(id=>{
+    const t=$(id); if(!t) return; t.innerHTML='';
+    if(!state.tray.length){ t.innerHTML='<p class="hint">No cards yet. Search or upload one.</p>'; return; }
+    state.tray.forEach(c=>{
+      const b=cardButton(c, ()=>{ if(id==='tray'){ state.selected=c; renderTray(); } });
+      if(id==='tray2'){ b.addEventListener('pointerdown',e=>startDrag(e,c,null)); b.setAttribute('aria-label',c.name+'. Drag onto a pocket'); }
+      else if(state.selected===c) b.classList.add('selected');
+      t.appendChild(b);
+    });
+  });
+}
+// ---------- drag and drop (pointer events: mouse + touch) ----------
+let drag=null;
+function startDrag(e, card, fromSlot){
+  if(e.button!==undefined && e.button!==0) return;
+  e.preventDefault();
+  drag={card, fromSlot, x0:e.clientX, y0:e.clientY, moved:false, ghost:null, id:e.pointerId};
+  const move=(ev)=>{
+    if(!drag) return;
+    if(!drag.moved && Math.hypot(ev.clientX-drag.x0, ev.clientY-drag.y0)<6) return;
+    if(!drag.moved){ drag.moved=true; const g=document.createElement('div'); g.className='ghost'; const im=document.createElement('img'); im.src=card.thumb||card.img.src; g.appendChild(im); document.body.appendChild(g); drag.ghost=g; }
+    drag.ghost.style.left=ev.clientX+'px'; drag.ghost.style.top=ev.clientY+'px';
+    document.querySelectorAll('#slots .slot.over').forEach(el=>el.classList.remove('over'));
+    const t=document.elementFromPoint(ev.clientX,ev.clientY)?.closest('#slots .slot'); if(t) t.classList.add('over');
+    ev.preventDefault();
+  };
+  const up=(ev)=>{
+    window.removeEventListener('pointermove',move); window.removeEventListener('pointerup',up); window.removeEventListener('pointercancel',up);
+    document.querySelectorAll('#slots .slot.over').forEach(el=>el.classList.remove('over'));
+    if(!drag) return;
+    const d=drag; drag=null; if(d.ghost) d.ghost.remove();
+    if(!d.moved){ if(d.fromSlot!=null){ state.slots[d.fromSlot]=null; render(); } else { state.selected=card; renderTray(); } return; }
+    const t=document.elementFromPoint(ev.clientX,ev.clientY)?.closest('#slots .slot');
+    if(t){ const to=+t.dataset.i;
+      if(d.fromSlot!=null){ const tmp=state.slots[to]; state.slots[to]=card; state.slots[d.fromSlot]=tmp; }
+      else state.slots[to]=card;
+      setStatus('slotStatus','');
+    } else if(d.fromSlot!=null){ state.slots[d.fromSlot]=null; }
+    render();
+  };
+  window.addEventListener('pointermove',move); window.addEventListener('pointerup',up); window.addEventListener('pointercancel',up);
+}
+function cardButton(c, onClick){
+  const b=document.createElement('button'); b.type='button'; b.className='card';
+  const im=document.createElement('img'); im.src=c.thumb||c.img.src; im.alt=''; im.loading='lazy'; im.draggable=false;
+  const s=document.createElement('span'); s.textContent=c.name;
+  b.append(im,s); b.addEventListener('click',onClick); return b;
+}
+function setStatus(id,msg,kind){ const el=$(id); el.textContent=msg||''; el.className='status'+(kind?' '+kind:''); }
+
+// ---------- prompt ----------
+const WORDS=['top-left','top-centre','top-right','middle-left','centre','middle-right','bottom-left','bottom-centre','bottom-right'];
+function buildPrompt(){
+  const placed=state.slots.map((s,i)=>s?{s,i}:null).filter(Boolean);
+  const many=placed.length>1;
+  const list=placed.map(({i})=>WORDS[i]);
+  const where=placed.length? (many? `in the ${list.slice(0,-1).join(', ')} and ${list.slice(-1)} pockets` : `in the ${list[0]} pocket`) : 'on the page';
+  const cw=many?'cards':'card';
+  const multi=many? `
+
+There are ${placed.length} cards, and each one may show a different scene, time of day or colour palette. The area around each card continues that card's own scene, colours and lighting. Where two scenes meet, blend them gradually and naturally across the space between them (for example daylight fading through dusk into night, or one landscape merging into another), so the whole page reads as a single picture with no hard seams, borders or dividing lines.` : '';
+  return `Edit the attached image. Paint only inside the grey rectangle, filling it completely so that the ${cw} ${where} and the grey area become one continuous illustration. Leave the white border, the tick marks and the labels exactly as they are, and leave the ${cw} exactly as ${many?'they are':'it is'}.${multi}
+
+The scene: ${$('scene').value===DEFAULT_SCENE && many ? DEFAULT_SCENE.replace(/the card's edges/g,"each card's edges").replace(/of the card\b/,'of each card') : $('scene').value.trim()}
+
+Style: flat illustrative art matching the ${cw} exactly: same linework, colours, lighting and level of detail. The grey area contains only background, scenery, light and atmosphere from the ${many?"cards' worlds":"card's world"}. Nothing else.
+
+Output at the same size as the attached image, at the highest resolution available.`;
+}
+function renderPrompt(){ $('promptOut').textContent=buildPrompt(); }
+$('scene').addEventListener('input',renderPrompt);
+const DEFAULT_SCENE=$('scene').value;
+$('resetScene').addEventListener('click',()=>{ $('scene').value=DEFAULT_SCENE; renderPrompt(); });
+
+// ---------- image loading ----------
+function loadImg(src, cors){
+  return new Promise((res,rej)=>{ const im=new Image(); if(cors) im.crossOrigin='anonymous'; im.onload=()=>res(im); im.onerror=()=>rej(new Error('image failed')); im.src=src; });
+}
+async function addToTray(card){
+  try{
+    const img=await loadImg(card.src, !card.src.startsWith('data:'));
+    const c={name:card.name, img, thumb:card.thumb||card.src};
+    state.tray.push(c); state.selected=c; renderTray();
+    setStatus('searchStatus',`Added ${card.name}. Upload more, or press Next.`,'ok');
+  }catch(e){
+    setStatus('searchStatus',`Couldn't load that image. Save it from ${card.page||'the source'} and upload it instead.`,'err');
+  }
+}
+$('upload').addEventListener('change', e=>{
+  [...e.target.files].forEach(f=>{
+    const r=new FileReader();
+    r.onload=()=>addToTray({name:f.name.replace(/\.[^.]+$/,'').replace(/[_-]+/g,' '), src:r.result});
+    r.readAsDataURL(f);
+  });
+  e.target.value='';
+});
+
+// ---------- search link ----------
+function searchUrl(q){
+  const base='https://www.pokemon.com/us/pokemon-tcg/pokemon-cards';
+  if(!q) return base;
+  return base+'?cardName='+encodeURIComponent(q).replace(/%20/g,'+')+'&cardText=&evolvesFrom=&simpleSubmit=&hitPointsMin=0&hitPointsMax=340&retreatCostMin=0&retreatCostMax=5&totalAttackCostMin=0&totalAttackCostMax=5&particularArtist=';
+}
+function updateSearchLink(){ $('searchLink').href=searchUrl($('q').value.trim()); }
+$('q').addEventListener('input',updateSearchLink);
+$('searchForm').addEventListener('submit',e=>{ e.preventDefault(); updateSearchLink(); $('searchLink').click(); });
+
+// ---------- downloads ----------
+let dlCap=null, dlChecked=false;
+async function getDl(){ if(!dlChecked){ dlChecked=true; try{ dlCap=window.claude?.use? await window.claude.use('downloads'):null; }catch(e){ dlCap=null; } } return dlCap; }
+async function saveFile(filename, data){
+  const cap=await getDl();
+  if(cap){ await cap.save({filename, data}); return; }
+  const blob=data instanceof Blob?data:new Blob([data],{type:'text/plain'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=filename; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+}
+function baseName(){ return 'binder'; }
+function toBlob(cv){ return new Promise((res,rej)=>cv.toBlob(b=>b?res(b):rej(new Error('blob')),'image/png')); }
+function explain(e, what){
+  if(e && e.code==='declined') return 'Download cancelled.';
+  if(/tainted|insecure|SecurityError/i.test(String(e))) return 'One of the searched cards blocks export. Save that card’s image to your computer, upload it in step 1, and try again.';
+  return `Couldn’t save the ${what}: `+(e && e.message||e);
+}
+$('dlPng').addEventListener('click', async ()=>{
+  setStatus('dlStatus','Preparing the template…');
+  try{ draw(full.getContext('2d'), full.width, full.height, 1); await saveFile(baseName()+'-template.png', await toBlob(full)); setStatus('dlStatus','Template saved. Now copy the prompt.','ok'); }
+  catch(e){ setStatus('dlStatus', explain(e,'template'),'err'); }
+});
+$('dlPrompt').addEventListener('click', async ()=>{
+  try{ await saveFile(baseName()+'-prompt.txt', buildPrompt()); setStatus('dlStatus','Prompt saved.','ok'); }
+  catch(e){ setStatus('dlStatus', explain(e,'prompt'),'err'); }
+});
+$('copyPrompt').addEventListener('click', async ()=>{
+  try{ await navigator.clipboard.writeText(buildPrompt()); setStatus('dlStatus','Prompt copied. Paste it into ChatGPT in the next step.','ok'); }
+  catch(e){ const r=document.createRange(); r.selectNodeContents($('promptOut')); const s=getSelection(); s.removeAllRanges(); s.addRange(r); setStatus('dlStatus','Copy was blocked here. The prompt is selected; press Ctrl/Cmd+C.','err'); }
+});
+
+// ---------- step 6: rebuild print sheet from the AI image ----------
+const BLEED=1;
+// Find the art block by looking for where the white margin ends.
+function detectBlock(img){
+  const W=Math.min(700,img.naturalWidth), H=Math.round(img.naturalHeight*W/img.naturalWidth);
+  const c=document.createElement('canvas'); c.width=W; c.height=H;
+  const x=c.getContext('2d',{willReadFrequently:true}); x.drawImage(img,0,0,W,H);
+  const d=x.getImageData(0,0,W,H).data;
+  const ink=(i)=>{ const r=d[i],g=d[i+1],b=d[i+2]; return (r+g+b)/3<232 || Math.max(r,g,b)-Math.min(r,g,b)>28; };
+  const rows=new Float32Array(H), cols=new Float32Array(W);
+  for(let y=0;y<H;y++) for(let xx=0;xx<W;xx++){ if(ink((y*W+xx)*4)){ rows[y]++; cols[xx]++; } }
+  const first=(arr,n,th)=>{ for(let i=0;i<arr.length;i++) if(arr[i]/n>th) return i; return -1; };
+  const last=(arr,n,th)=>{ for(let i=arr.length-1;i>=0;i--) if(arr[i]/n>th) return i; return -1; };
+  const y0=first(rows,W,0.5), y1=last(rows,W,0.5), x0=first(cols,H,0.5), x1=last(cols,H,0.5);
+  if(x0<0||y0<0||x1-x0<W*0.5||y1-y0<H*0.5) return null;
+  const k=img.naturalWidth/W;
+  return {x:x0*k, y:y0*k, w:(x1-x0+1)*k, h:(y1-y0+1)*k};
+}
+function drawFinal(ctx,W,H,scale){
+  const img=state.final; if(!img) return;
+  const p=mm=>mm*PPM*scale;
+  const [TW,TH]=tileSize(), BW=3*TW, BH=3*TH, MX=(PW-BW)/2, MY=(PH-BH)/2;
+  ctx.fillStyle='#fff'; ctx.fillRect(0,0,W,H);
+  // assume the AI kept the template layout: art block sits at the same proportions of the image
+  const blk=state.finalBlock||{x:img.naturalWidth*MX/PW, y:img.naturalHeight*TMY/TPH, w:img.naturalWidth*BW/PW, h:img.naturalHeight*BH/TPH};
+  const ax=blk.x, ay=blk.y, aw=blk.w, ah=blk.h;
+  const kx=aw/BW, ky=ah/BH;   // the template was laid out at the same pocket size
+  for(let i=0;i<9;i++){
+    const c=i%3, r=Math.floor(i/3);
+    const sx=ax+(c*TW-BLEED)*kx, sy=ay+(r*TH-BLEED)*ky, sw=(TW+2*BLEED)*kx, sh=(TH+2*BLEED)*ky;
+    ctx.drawImage(img, Math.max(0,sx), Math.max(0,sy), sw, sh, p(MX+c*TW-BLEED), p(MY+r*TH-BLEED), p(TW+2*BLEED), p(TH+2*BLEED));
+  }
+  if($('optGuide').checked){
+    ctx.save(); ctx.strokeStyle='rgba(40,40,40,0.55)'; ctx.lineWidth=Math.max(1,p(0.15)); ctx.setLineDash([p(3),p(2)]);
+    ctx.beginPath();
+    for(let i=1;i<3;i++){ const x=MX+i*TW, y=MY+i*TH;
+      ctx.moveTo(p(x),p(MY-BLEED)); ctx.lineTo(p(x),p(MY+BH+BLEED));
+      ctx.moveTo(p(MX-BLEED),p(y)); ctx.lineTo(p(MX+BW+BLEED),p(y)); }
+    ctx.stroke(); ctx.restore();
+  }
+  const col='#282828'; ctx.strokeStyle=col; ctx.lineWidth=Math.max(1,p(0.25));
+  const gap=BLEED+1.5;
+  ctx.beginPath();
+  for(let i=0;i<4;i++){
+    const x=MX+i*TW, y=MY+i*TH;
+    ctx.moveTo(p(x),0); ctx.lineTo(p(x),p(MY-gap));
+    ctx.moveTo(p(x),p(MY+BH+gap)); ctx.lineTo(p(x),p(PH));
+    ctx.moveTo(0,p(y)); ctx.lineTo(p(MX-gap),p(y));
+    ctx.moveTo(p(MX+BW+gap),p(y)); ctx.lineTo(p(PW),p(y));
+  }
+  ctx.stroke();
+}
+$('finalUpload').addEventListener('change', e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=async()=>{
+    try{
+      state.final=await loadImg(r.result,false);
+      state.finalBlock=detectBlock(state.final);
+      const cv=$('finalPreview'); drawFinal(cv.getContext('2d'),cv.width,cv.height,cv.width/px(PW));
+      const fs=$('finalSlots'); fs.innerHTML=''; for(let i=0;i<9;i++){ const d=document.createElement('div'); d.className='slot'; fs.appendChild(d); } placeOverlay();
+      $('finalBox').hidden=false;
+      const w=state.final.naturalWidth;
+      const found=state.finalBlock?'Picture found on the page. ':'Couldn\u2019t find the picture edges; using the standard layout. ';
+      setStatus('finalStatus', found+(w<2000?`The image is ${w} px wide, which will print soft. Consider upscaling it first (step 5).`:`${w} × ${state.final.naturalHeight} px. Good for print.`), w<2000?'err':'ok');
+    }catch(err){ setStatus('finalStatus','Couldn’t read that image.','err'); }
+  };
+  r.readAsDataURL(f); e.target.value='';
+});
+function placeOverlay(){ const [w,h]=tileSize();
+  const put=(el,ph)=>{ if(!el) return; el.style.left=((PW-3*w)/2/PW*100)+'%'; el.style.width=(3*w/PW*100)+'%'; el.style.top=((ph-3*h)/2/ph*100)+'%'; el.style.height=(3*h/ph*100)+'%'; };
+  put($('finalSlots'),PH); put($('slots'),TPH);
+  $('sizeEcho').textContent=w+' × '+h+' mm'; }
+function redrawFinal(){ placeOverlay(); const cv=$('finalPreview'); if(state.final) drawFinal(cv.getContext('2d'),cv.width,cv.height,cv.width/px(PW)); }
+$('tileSize').addEventListener('change',()=>{ $('customSize').hidden=$('tileSize').value!=='custom'; render(); redrawFinal(); });
+['tileW','tileH'].forEach(id=>$(id).addEventListener('input',()=>{ render(); redrawFinal(); }));
+$('optGuide').addEventListener('change',()=>{ const cv=$('finalPreview'); if(state.final) drawFinal(cv.getContext('2d'),cv.width,cv.height,cv.width/px(PW)); });
+$('dlFinal').addEventListener('click', async()=>{
+  if(!state.final) return;
+  setStatus('finalStatus','Building the print sheet…');
+  try{ drawFinal(fullA4.getContext('2d'),fullA4.width,fullA4.height,1); await saveFile(baseName()+'-print-sheet.png', await toBlob(fullA4)); setStatus('finalStatus',`Print sheet saved with ${tileSize().join(' × ')} mm tiles. Print it at 100% on A4.`,'ok'); }
+  catch(e){ setStatus('finalStatus', explain(e,'print sheet'),'err'); }
+});
+
+// ---------- misc ----------
+$('clearBtn').addEventListener('click',()=>{ state.slots=Array(9).fill(null); render(); });
+
+$('q').value='Mew ex'; updateSearchLink();
+renderTray(); showStep(1);
+})();
+</script>
+
+</body>
+</html>
