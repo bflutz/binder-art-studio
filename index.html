@@ -468,7 +468,7 @@ nav.steps{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;bor
   <b>Beta:</b> still being built, so things may change or break. <a href="#" class="fb-open" id="fbFooter">Send feedback</a><br>
   A fan-made hobby tool 💕 Not affiliated with Nintendo, The Pokémon Company or OpenAI. Card art belongs to its owners.<br>
   Pokémon and all related names are trademarks of Nintendo, Creatures, GAME FREAK and The Pokémon Company.<br>
-  Your pictures stay in your browser; nothing is uploaded to this site.<br>
+  Your pictures stay in your browser; nothing is uploaded to this site. We count anonymous visits (no cookies) to see if the tool is useful.<br>
   © 2026 bflutz · Free for personal &amp; community use · Commercial use? <a href="#" class="fb-open">Please ask first</a> · <a href="https://github.com/bflutz/binder-art-studio/blob/main/LICENSE.md" target="_blank" rel="noopener">Licence</a>
 </footer>
 
@@ -492,6 +492,7 @@ function showStep(n){
   renderRail();
   $('gallery').hidden = n!==1;
   if(n===7) confetti();
+  if(n>=2) ping('step'+n);
   if(n===2){ renderTray(); render(); }
   if(n===3){ drawTo($('preview3')); renderPrompt(); }
   window.scrollTo({top:0,behavior:'smooth'});
@@ -727,15 +728,15 @@ function explain(e, what){
 }
 $('dlPng').addEventListener('click', async ()=>{
   setStatus('dlStatus','Preparing the template…');
-  try{ draw(full.getContext('2d'), full.width, full.height, 1); await saveFile(baseName()+'-template.png', await toBlob(full)); setStatus('dlStatus','Template saved. Now copy the prompt.','ok'); }
+  try{ draw(full.getContext('2d'), full.width, full.height, 1); await saveFile(baseName()+'-template.png', await toBlob(full)); ping('template'); setStatus('dlStatus','Template saved. Now copy the prompt.','ok'); }
   catch(e){ setStatus('dlStatus', explain(e,'template'),'err'); }
 });
 $('dlPrompt').addEventListener('click', async ()=>{
-  try{ await saveFile(baseName()+'-prompt.txt', buildPrompt()); setStatus('dlStatus','Prompt saved.','ok'); }
+  try{ await saveFile(baseName()+'-prompt.txt', buildPrompt()); ping('prompt'); setStatus('dlStatus','Prompt saved.','ok'); }
   catch(e){ setStatus('dlStatus', explain(e,'prompt'),'err'); }
 });
 $('copyPrompt').addEventListener('click', async ()=>{
-  try{ await navigator.clipboard.writeText(buildPrompt()); setStatus('dlStatus','Prompt copied. Paste it into ChatGPT in the next step.','ok'); }
+  try{ await navigator.clipboard.writeText(buildPrompt()); ping('prompt'); setStatus('dlStatus','Prompt copied. Paste it into ChatGPT in the next step.','ok'); }
   catch(e){ const r=document.createRange(); r.selectNodeContents($('promptOut')); const s=getSelection(); s.removeAllRanges(); s.addRange(r); setStatus('dlStatus','Copy was blocked here. The prompt is selected; press Ctrl/Cmd+C.','err'); }
 });
 
@@ -819,7 +820,7 @@ $('optGuide').addEventListener('change',()=>{ const cv=$('finalPreview'); if(sta
 $('dlFinal').addEventListener('click', async()=>{
   if(!state.final) return;
   setStatus('finalStatus','Building the print sheet…');
-  try{ drawFinal(fullA4.getContext('2d'),fullA4.width,fullA4.height,1); await saveFile(baseName()+'-print-sheet.png', await toBlob(fullA4)); setStatus('finalStatus',`Print sheet saved with ${tileSize().join(' × ')} mm tiles. Print it at 100% on A4.`,'ok'); }
+  try{ drawFinal(fullA4.getContext('2d'),fullA4.width,fullA4.height,1); await saveFile(baseName()+'-print-sheet.png', await toBlob(fullA4)); ping('print_sheet'); setStatus('finalStatus',`Print sheet saved with ${tileSize().join(' × ')} mm tiles. Print it at 100% on A4.`,'ok'); }
   catch(e){ setStatus('finalStatus', explain(e,'print sheet'),'err'); }
 });
 
@@ -919,11 +920,31 @@ $('fbCopy').addEventListener('click',async()=>{
 $('fbClose').addEventListener('click',()=>fb.close());
 fb.addEventListener('click',e=>{ if(e.target===fb) fb.close(); });
 
+// ---------- anonymous usage counts ----------
+// No cookies, no IDs: the browser only remembers "already counted today" / "been here before"
+// and sends yes/no flags, so visits can be counted but never linked to a person.
+const STATS_ON = !!FEEDBACK_URL && (location.hostname.endsWith('github.io') || /[?&]stats=1(&|$)/.test(location.search));
+const pinged=new Set();
+function ping(event){
+  if(!STATS_ON || pinged.has(event)) return;
+  pinged.add(event);
+  const d={kind:'ping', event, device:deviceLabel(), look:state.vibe, cards:state.slots.filter(Boolean).length};
+  if(event==='open'){
+    try{
+      const day=new Date().toLocaleDateString('en-CA'), seen=localStorage.getItem('bas-seen');
+      if(localStorage.getItem('bas-day')!==day){ d.today=1; d.returning=seen?1:0; d.first=seen?0:1; localStorage.setItem('bas-day',day); }
+      if(!seen) localStorage.setItem('bas-seen','1');
+    }catch(e){}
+  }
+  try{ fetch(FEEDBACK_URL,{method:'POST',keepalive:true,headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(d)}).catch(()=>{}); }catch(e){}
+}
+document.querySelectorAll('details.help').forEach(el=>el.addEventListener('toggle',()=>{ if(el.open) ping('help'); }));
+
 // ---------- misc ----------
 $('clearBtn').addEventListener('click',()=>{ state.slots=Array(9).fill(null); render(); });
 
 $('q').value='Mew ex'; updateSearchLink();
-renderTray(); showStep(1);
+renderTray(); showStep(1); ping('open');
 })();
 </script>
 
